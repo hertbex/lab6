@@ -1,0 +1,26 @@
+name: Lab15 Lint and Type Check
+
+on:
+  push:
+
+jobs:
+  lint:
+    name: Ruff
+    runs-on: self-hosted
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lint and format check
+        run: make lint
+
+  type-check:
+    name: Mypy
+    runs-on: self-hosted
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Type check
+        run: make type-check
+

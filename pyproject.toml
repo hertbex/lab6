@@ -1,0 +1,27 @@
+[project]
+name = "lab15"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "mypy>=2.1.0",
+    "numpy>=2.4.6",
+    "ruff>=0.15.13",
+    "sentence-transformers>=3.0.0",
+    "streamlit>=1.57.0",
+    "streamlit-echarts>=0.6.0",
+    "torchvision>=0.27.0",
+]
+
+[tool.mypy]
+python_version = "3.12"
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+warn_return_any = true
+no_implicit_optional = true
+
+[[tool.mypy.overrides]]
+module = ["streamlit", "streamlit.*", "streamlit_echarts"]
+ignore_missing_imports = true
