@@ -1,4 +1,3 @@
-# Пишите сами друзья, можно даже вайбкодить!
 from __future__ import annotations
 
 import json
@@ -9,20 +8,19 @@ import streamlit as st
 from streamlit_echarts import st_echarts
 
 from embedding import Embeddings
-# TODO: импорты поломаны
-# from main import (
-#     Node,
-#     Record,
-#     SearchResult,
-#     SemanticBTree,
-#     build_tree_from_records,
-#     validate_record,
-# )
+from main import (
+    Node,
+    Record,
+    SearchResult,
+    SemanticBTree,
+    build_tree_from_records,
+    validate_record,
+)
 
 
 class _EChartsItem(TypedDict):
     name: str
-    value: Record | None
+    value: int | None
 
 
 class _EChartsNode(TypedDict):
@@ -31,13 +29,11 @@ class _EChartsNode(TypedDict):
     children: list[_EChartsNode | _EChartsItem]
 
 
-# Why: visualization nodes need a compact and readable multiline label.
 def build_node_label(name: str, size: int, radius: float) -> str:
     """Return a formatted multiline label for an ECharts tree node."""
     return f"{name}\nsize={size}\nradius={radius:.3f}"
 
 
-# Why: root should expose the current maximum id because new ids are allocated from it.
 def build_root_label(node: Node) -> str:
     """Return a formatted label for the root node."""
     return (
@@ -48,13 +44,11 @@ def build_root_label(node: Node) -> str:
     )
 
 
-# Why: leaf labels should expose the original sentence directly in the diagram.
 def build_leaf_label(text: str) -> str:
     """Return a multiline label for a leaf item."""
     return text
 
 
-# Why: ECharts expects a nested dict structure that must be derived recursively.
 def tree_to_echarts(
     node: Node,
     depth: int = 0,
@@ -77,7 +71,7 @@ def tree_to_echarts(
                 name=build_leaf_label(
                     text=item.payload.text if item.payload is not None else ""
                 ),
-                value=item.payload,
+                value=item.item_id,
             )
             for item in node.items
         ]
@@ -90,7 +84,6 @@ def tree_to_echarts(
     )
 
 
-# Why: chart configuration should be isolated so layout fixes stay in one place.
 def render_tree(tree: SemanticBTree) -> None:
     """Render the semantic tree using ECharts."""
     data = tree_to_echarts(tree.root, is_root=True)
@@ -155,7 +148,6 @@ def render_tree(tree: SemanticBTree) -> None:
     st_echarts(options=options, height="900px")
 
 
-# Why: JSON loading is separated from UI flow to keep the script deterministic.
 def load_records(file_path: Path) -> list[Record]:
     """Load the initial records for the demo."""
     with file_path.open("r", encoding="utf-8") as file:
@@ -163,21 +155,18 @@ def load_records(file_path: Path) -> list[Record]:
     return [validate_record(entry) for entry in raw]
 
 
-# Why: initial records should be loaded once so local edits survive Streamlit reruns.
 def initialize_records(file_path: Path) -> None:
     """Initialize editable records in session state."""
     if "records" not in st.session_state:
         st.session_state.records = load_records(file_path)
 
 
-# Why: tree cache must be invalidated whenever the underlying dataset changes.
 def invalidate_tree() -> None:
     """Drop cached tree metadata from session state."""
     st.session_state.pop("tree", None)
     st.session_state.pop("tree_key", None)
 
 
-# Why: new ids should be assigned automatically from the current tree root maximum.
 def get_next_record_id() -> int:
     """Return the next available record id."""
     tree: SemanticBTree | None = st.session_state.get("tree")
@@ -190,7 +179,6 @@ def get_next_record_id() -> int:
     return max(numeric_ids, default=0) + 1
 
 
-# Why: new nodes are created from user input and must keep ids unique and data consistent.
 def add_record(text: str) -> tuple[bool, str]:
     """Add a new record into the editable dataset."""
     normalized_text = text.strip()
@@ -208,7 +196,6 @@ def add_record(text: str) -> tuple[bool, str]:
     return True, f"Запись с id={next_record_id} добавлена."
 
 
-# Why: deletion is implemented at dataset level because the tree is rebuilt after edits.
 def delete_record(record_id: str) -> tuple[bool, str]:
     """Delete a record by id from the editable dataset."""
     normalized_id = record_id.strip()
@@ -227,11 +214,9 @@ def delete_record(record_id: str) -> tuple[bool, str]:
     return True, f"Запись с id={normalized_id} удалена."
 
 
-# Why: success feedback after insertion should include the final branch chosen by the tree.
 def find_item_path(tree: SemanticBTree, item_id: int) -> list[str] | None:
     """Return the node path from root to the leaf containing the given item id."""
 
-    # Why: recursive traversal is the simplest way to recover the stored route in the built tree.
     def dfs(node: Node, path: list[str]) -> list[str] | None:
         """Traverse the tree and return the path when the item is found."""
         current_path = [*path, node.node_id]
@@ -251,7 +236,6 @@ def find_item_path(tree: SemanticBTree, item_id: int) -> list[str] | None:
     return dfs(tree.root, [])
 
 
-# Why: deferred feedback lets the UI show the actual branch only after the tree is rebuilt.
 def render_feedback(tree: SemanticBTree | None) -> None:
     """Render success or error feedback for the last mutation."""
     pending_added_id: int | None = st.session_state.pop("pending_added_id", None)
@@ -278,7 +262,6 @@ def render_feedback(tree: SemanticBTree | None) -> None:
             st.sidebar.error(message)
 
 
-# Why: tree operations are unavailable on an empty dataset, so this state needs explicit handling.
 def get_or_build_tree(
     records: list[Record],
     embedder: Embeddings,
@@ -300,10 +283,9 @@ def get_or_build_tree(
         )
         st.session_state.tree_key = current_key
 
-    return st.session_state.tree  # type: ignore[no-any-return]
+    return st.session_state.tree
 
 
-# Why: editing controls are grouped to keep all dataset mutations in one visible place.
 def render_record_controls() -> None:
     """Render forms for adding and deleting records."""
     with st.sidebar.expander("Управление узлами", expanded=True):
@@ -338,7 +320,6 @@ def render_record_controls() -> None:
                     st.session_state.feedback = ("error", message)
 
 
-# Why: the user benefits from seeing which ids are currently available for deletion and search.
 def render_records_overview(records: list[Record]) -> None:
     """Render a compact overview of current record identifiers."""
     st.sidebar.caption(f"Всего записей: {len(records)}")
@@ -353,7 +334,6 @@ def render_records_overview(records: list[Record]) -> None:
         st.sidebar.caption("Показаны первые 12 id.")
 
 
-# Why: search results should be generated only when a valid tree exists.
 def render_search_results(
     tree: SemanticBTree | None,
     embedder: Embeddings,
@@ -380,7 +360,6 @@ def render_search_results(
             )
 
 
-# Why: tree rendering should degrade gracefully when all records were deleted.
 def render_tree_panel(tree: SemanticBTree | None) -> None:
     """Render the tree panel or an empty-state message."""
     st.subheader("Дерево")
@@ -392,7 +371,6 @@ def render_tree_panel(tree: SemanticBTree | None) -> None:
     render_tree(tree)
 
 
-# Why: the app entrypoint keeps Streamlit layout and interactions explicit.
 def main() -> None:
     """Run the Streamlit demo application."""
     st.set_page_config(layout="wide")
